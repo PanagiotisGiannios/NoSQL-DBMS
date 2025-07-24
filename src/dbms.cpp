@@ -53,10 +53,10 @@ namespace dbms {
 
     #pragma endregion
 
-    Status ensureDatabasesDirectory() {
+    Status ensureDatabasesDirectoryExists() {
         const char* appdataPath = std::getenv("LOCALAPPDATA");
         if (!appdataPath) {
-            setError(ErrorCode::AppdataNotAccessible, "Apddata is not accessible!");
+            setError(ErrorCode::AppdataNotAccessible, "Cannot access LOCALAPPDATA environment variable!");
             return Status::AppdataNotFound;
         }
     
@@ -73,7 +73,7 @@ namespace dbms {
         }
         
         if (!fs::is_directory(databasesFolderPath)) {
-            setError(ErrorCode::IsFile, "there already exists a file with the name: Databases in: " + DATABASES_DIRECTORY_PATH);
+            setError(ErrorCode::IsFile, "There already exists a file with the name: Databases in: " + DATABASES_DIRECTORY_PATH);
             return Status::PathIsFile;
         }
         return Status::Ok;
@@ -88,8 +88,10 @@ namespace dbms {
     }
 
     bool createNewDatabase(std::string name) {
-        clearError();
-        Status res = ensureDatabasesDirectory();
+        if (hasError()) {
+            return false;
+        }
+        Status res = ensureDatabasesDirectoryExists();
         if (res != Status::Ok) {
             return false;
         }
@@ -105,7 +107,7 @@ namespace dbms {
         if (databaseCreated) {
             return true;
         }
-
+        setError(ErrorCode::DatabaseDoesNotExist, "The database could not be created");
         return false;
     }
 }
