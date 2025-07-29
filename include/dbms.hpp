@@ -9,7 +9,10 @@ namespace dbms {
         DatabaseAlreadyExists,
         DatabaseDoesNotExist,
         BaseDirectoryCreationFail,
-        UnhandledPreviousError
+        UnhandledPreviousError,
+        NoDatabaseSelected,
+        CollectionAlreadyExists,
+        CollectionDoesNotExist
     };
 
     bool hasError();
@@ -23,4 +26,6 @@ namespace dbms {
     bool createNewDatabase(const std::string& name);
 
     bool selectDatabase(const std::string& name);
+
+    bool createNewCollection(const std::string& name);
 }

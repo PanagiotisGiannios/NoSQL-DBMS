@@ -2,7 +2,7 @@
 #include <filesystem>
 #include "dbms.hpp"
 #include <cstdlib>
-
+#include <fstream>
 
 namespace dbms {
 
@@ -109,6 +109,7 @@ namespace dbms {
     }
 
     bool createNewDatabase(const std::string& name) {
+        std::error_code ec;
         if (hasError()) {
             convertToUnhandledError();
             return false;
@@ -118,19 +119,26 @@ namespace dbms {
             return false;
         }
         
-        fs::path database(DATABASES_DIRECTORY_PATH + "\\" + name);
+        fs::path database(DATABASES_DIRECTORY_PATH);
+        database /= name;
         
         res = checkIfDatabaseAlreadyExists(database);
         if (res == Status::Exists) {
             return false;
         }
         
-        bool databaseCreated = fs::create_directory(database);
+        bool databaseCreated = fs::create_directory(database,ec);
         if (databaseCreated) {
             return true;
         }
-        setError(ErrorCode::DatabaseDoesNotExist,
-            "The database could not be created");
+        if (ec.value() == 123) {
+            setError(ErrorCode::DatabaseDoesNotExist,
+                "Can't create a database with the given name!");
+        }
+        else {
+            setError(ErrorCode::DatabaseDoesNotExist,
+                "The database could not be created");
+        }
         return false;
     }
 
@@ -165,6 +173,66 @@ namespace dbms {
             return false;
         }
         
+        return true;
+    }
+
+    bool collectionExists(const fs::path& collection) {
+        if (fs::exists(collection)) {
+            return true;
+        }
+        else {
+            false;
+        }
+    }
+
+    bool createNewCollection(const std::string& name) {
+        std::error_code ec;
+        if (SELECTED_DATABASE_PATH.empty()) {
+            setError(ErrorCode::NoDatabaseSelected,
+                "No database has been selected!");
+            return false;
+        }
+
+        fs::path database(SELECTED_DATABASE_PATH);
+        
+        if (!fs::exists(database)) {
+            setError(ErrorCode::DatabaseDoesNotExist,
+                "Database previously selected has been deleted!");
+            return false;
+        }
+        
+        if (fs::is_regular_file(database)) {
+            setError(ErrorCode::DatabaseDoesNotExist,
+                "Database previously selected turned into file!");
+            return false;
+        }
+
+        fs::path collection = database /= name;
+        if (collectionExists(collection)) {
+            setError(ErrorCode::CollectionAlreadyExists,
+                "A collection with the same name already exists!");
+            return false;
+        }
+
+        bool collectionCreated = fs::create_directory(collection,ec);
+        if (!collectionCreated) {
+            if (ec.value() == 123) {
+                setError(ErrorCode::CollectionDoesNotExist,
+                    "Can't create a collection with the given name!");
+            }
+            else {
+                setError(ErrorCode::CollectionDoesNotExist,
+                    "Collection could not be created!");
+            }
+            return false;
+        }
+        
+        fs::path infoPath = collection /= (name + ".info");
+        std::ofstream ofs(infoPath);
+        int initialValue = 0;
+        ofs.write(reinterpret_cast<const char*>( &initialValue), sizeof(initialValue));
+        ofs.close();
+
         return true;
     }
 }

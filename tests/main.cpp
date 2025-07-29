@@ -31,8 +31,8 @@ int main() {
         case 'c':
             cout << "create\n";
             
-            if (dbms::createNewDatabase(selection)) {
-                cout << "dbb created successfully";
+            if (dbms::createNewCollection(selection)) {
+                cout << "collection created successfully";
             }
             else {
                 cout << "Database creation error: " << dbms::getErrorMessage() << "\n";
